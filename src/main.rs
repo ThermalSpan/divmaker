@@ -10,7 +10,7 @@ mod args_and_usage;
 
 use args_and_usage::parse_args;
 
-use html5ever::{ParseOpts, parse_document, parse_fragment};
+use html5ever::{Attribute, ParseOpts, parse_document, parse_fragment};
 use html5ever::tree_builder::TreeBuilderOpts;
 use html5ever::rcdom::RcDom;
 use html5ever::rcdom::NodeEnum::Element;
@@ -108,6 +108,10 @@ quick_main!(|| -> Result<()> {
 	let span_name = qualname!(html, "span");
 	let attr_tendril = Tendril::from_str("math display")
 		.expect("Can't make tendril");
+	let display_attr = Attribute {
+		name: qualname!("", "class"),
+		value: Tendril::from_str("display").expect("Can't make tendril")
+	};
 
 	let mut paragraphs_to_check = Vec::new();
 
@@ -150,8 +154,9 @@ quick_main!(|| -> Result<()> {
 		}
 
 		if swap_flag {
-			if let Element(ref mut qual_name, _, _) = para.node {
+			if let Element(ref mut qual_name, _, ref mut attributes) = para.node {
 				*qual_name = div_name.clone();
+				attributes.push(display_attr.clone());
 			}
 		}
 	}
@@ -166,8 +171,11 @@ quick_main!(|| -> Result<()> {
 		serialize_opts
 	).chain_err(|| format!("Unable to serialize fragment"))?;
 
-// https://stackoverflow.com/questions/38859811/how-do-i-parse-a-page-with-html5ever-modify-the-dom-and-serialize-it
-    Ok(())
+	if ! args.keep_orig {
+		fs::remove_file(&original_path)?;	
+	}
+    
+	Ok(())
 });
 
 error_chain! {
