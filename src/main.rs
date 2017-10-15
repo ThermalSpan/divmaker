@@ -1,16 +1,14 @@
 extern crate clap;
 #[macro_use] extern crate error_chain;
 extern crate html5ever;
-extern crate scraper;
 #[macro_use] extern crate string_cache;
 extern crate tendril;
-use std::str::FromStr;
 
 mod args_and_usage;
 
 use args_and_usage::parse_args;
 
-use html5ever::{Attribute, ParseOpts, parse_document, parse_fragment};
+use html5ever::{Attribute, ParseOpts, parse_fragment};
 use html5ever::tree_builder::TreeBuilderOpts;
 use html5ever::rcdom::RcDom;
 use html5ever::rcdom::NodeEnum::Element;
@@ -18,10 +16,9 @@ use html5ever::serialize::{SerializeOpts, serialize, TraversalScope};
 use html5ever::tendril::TendrilSink;
 use tendril::Tendril;
 
-use scraper::{Html, Selector};
-use scraper::element_ref::ElementRef;
 use std::fs;
 use std::fs::File;
+use std::str::FromStr;
 use std::io::Read;
 
 quick_main!(|| -> Result<()> {
@@ -90,7 +87,7 @@ quick_main!(|| -> Result<()> {
 		..Default::default()
 	};
 
-    let mut dom = parse_fragment(
+    let dom = parse_fragment(
 		RcDom::default(),
 		opts,
 		qualname!(html, "body"),
@@ -100,8 +97,8 @@ quick_main!(|| -> Result<()> {
         .read_from(&mut input_buffer.as_bytes())
         .unwrap();
 {
-	let mut document = dom.document.borrow_mut();
-	let mut fragment = document.children[0].borrow_mut();
+	let document = dom.document.borrow_mut();
+	let fragment = document.children[0].borrow_mut();
 	
 	let div_name = qualname!(html, "div");
 	let p_name = qualname!(html, "p");
@@ -120,10 +117,7 @@ quick_main!(|| -> Result<()> {
 		
 		if let Element(ref qual_name, _, _) = child.node {
 			if &p_name == qual_name {
-				println!("index: {}, found p", index);
 				paragraphs_to_check.push(fragment.children[index].clone());	
-			} else {
-				println!("index: {}, no p, {:?}", index, qual_name);
 			}
 		}
 	}
@@ -139,15 +133,11 @@ quick_main!(|| -> Result<()> {
 			if let Element(ref qual_name, _, ref attributes) = child.node {
 				if qual_name != &span_name {
 					continue;	
-					println!("p child {} had {:?}", index, qual_name);
 				}
 
 				for attr in attributes {
 					if attr.value == attr_tendril {
 						swap_flag = true;
-						println!("p child {}, had right attr", index);
-					} else {
-						println!("p child {}, had wrong attr {:?}", index, attr);
 					}
 				}
 			}
