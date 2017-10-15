@@ -1,4 +1,4 @@
-use clap::{Arg, App};
+use clap::{App, Arg};
 use std::path::PathBuf;
 
 // Programmer defined constants
@@ -18,15 +18,19 @@ pub fn parse_args() -> Args {
         .version(VERSION)
         .author("Russell W. Bentley <russell.w.bentley@icloud.com>")
         .about("A tool to fix up pandoc html for my website")
-        .arg(Arg::with_name("INPUT")
-            .help("The file pandoc spits out")
-            .long("input")
-            .value_name("input/file.ex")
-            .takes_value(true)
-            .required(true))
-        .arg(Arg::with_name("KEEP_ORIG")
-            .help("Defualt behaivor is to delete original file")
-            .long("keep-orig"))
+        .arg(
+            Arg::with_name("INPUT")
+                .help("The file pandoc spits out")
+                .long("input")
+                .value_name("input/file.ex")
+                .takes_value(true)
+                .required(true),
+        )
+        .arg(
+            Arg::with_name("KEEP_ORIG")
+                .help("Defualt behaivor is to delete original file")
+                .long("keep-orig"),
+        )
         .get_matches();
 
     let input_path_raw = args.value_of("INPUT").unwrap();
@@ -37,5 +41,3 @@ pub fn parse_args() -> Args {
         keep_orig: args.is_present("KEEP_ORIG"),
     }
 }
-
-
