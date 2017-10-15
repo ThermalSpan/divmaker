@@ -3,6 +3,8 @@ extern crate clap;
 extern crate html5ever;
 extern crate scraper;
 #[macro_use] extern crate string_cache;
+extern crate tendril;
+use std::str::FromStr;
 
 mod args_and_usage;
 
@@ -14,6 +16,7 @@ use html5ever::rcdom::RcDom;
 use html5ever::rcdom::NodeEnum::Element;
 use html5ever::serialize::{SerializeOpts, serialize, TraversalScope};
 use html5ever::tendril::TendrilSink;
+use tendril::Tendril;
 
 use scraper::{Html, Selector};
 use scraper::element_ref::ElementRef;
@@ -35,11 +38,11 @@ quick_main!(|| -> Result<()> {
     fs::rename(&args.input, &original_path)
         .chain_err(|| format!(
                 "Unable to rename\n{}\nto\n{}",
-                args.input.display(), 
+                args.input.display(),
                 original_path.display()
             )
         )?;
-    
+
     // Now lets get the input file handle read
     let mut input_file = File::open(&original_path)
         .chain_err(|| format!("Can't open input file: {}", original_path.display()))?;
@@ -74,7 +77,7 @@ quick_main!(|| -> Result<()> {
         let e1 = ElementRef::wrap(e).unwrap();
         println!("elementref: {:?}", e1);
         //output_file.write_all(e1.html().as_bytes());
-        
+
         serialize(&mut output_file, &e1 , Default::default())?;
     }
 */
@@ -87,8 +90,8 @@ quick_main!(|| -> Result<()> {
 		..Default::default()
 	};
 
-    let dom = parse_fragment(
-		RcDom::default(), 
+    let mut dom = parse_fragment(
+		RcDom::default(),
 		opts,
 		qualname!(html, "body"),
 		Vec::new()
@@ -96,10 +99,63 @@ quick_main!(|| -> Result<()> {
         .from_utf8()
         .read_from(&mut input_buffer.as_bytes())
         .unwrap();
+{
+	let mut document = dom.document.borrow_mut();
+	let mut fragment = document.children[0].borrow_mut();
+	
+	let div_name = qualname!(html, "div");
+	let p_name = qualname!(html, "p");
+	let span_name = qualname!(html, "span");
+	let attr_tendril = Tendril::from_str("math display")
+		.expect("Can't make tendril");
 
-	println!("doc chil count: {}", dom.document.borrow().children.len());
+	let mut paragraphs_to_check = Vec::new();
 
-    let document = dom.document.borrow();
+	for index in 0..fragment.children.len() {
+		let child = fragment.children[index].borrow();
+		
+		if let Element(ref qual_name, _, _) = child.node {
+			if &p_name == qual_name {
+				println!("index: {}, found p", index);
+				paragraphs_to_check.push(fragment.children[index].clone());	
+			} else {
+				println!("index: {}, no p, {:?}", index, qual_name);
+			}
+		}
+	}
+
+	for p in paragraphs_to_check {
+		let mut para = p.borrow_mut();
+
+		let mut swap_flag = false;
+
+		for index in 0..para.children.len() {
+			let child = para.children[index].borrow();
+
+			if let Element(ref qual_name, _, ref attributes) = child.node {
+				if qual_name != &span_name {
+					continue;	
+					println!("p child {} had {:?}", index, qual_name);
+				}
+
+				for attr in attributes {
+					if attr.value == attr_tendril {
+						swap_flag = true;
+						println!("p child {}, had right attr", index);
+					} else {
+						println!("p child {}, had wrong attr {:?}", index, attr);
+					}
+				}
+			}
+		}
+
+		if swap_flag {
+			if let Element(ref mut qual_name, _, _) = para.node {
+				*qual_name = div_name.clone();
+			}
+		}
+	}
+}	
 	let serialize_opts = SerializeOpts {
 		scripting_enabled: true,
 		traversal_scope: TraversalScope::ChildrenOnly
