@@ -54,30 +54,6 @@ quick_main!(|| -> Result<()> {
     input_file.read_to_string(&mut input_buffer)
         .chain_err(|| format!("Can't read from input file: {}", original_path.display()))?;
 
-/*    let mut fragment = Html::parse_fragment(&input_buffer);
-
-    let paragraph_selecter = Selector::parse("p").unwrap();
-    let math_selector = Selector::parse(".display").unwrap();
-
-    for p in fragment.select(&paragraph_selecter) {
-        let inards: Vec<ElementRef>= p.select(&math_selector).collect();
-        if inards.len() == 1 {
-            println!("Found ex: {}", inards[0].html());
-        }
-    }
-
-    {
-        let handle = fragment.get_document();
-        println!("handle: {:?}", handle);
-        let e = fragment.tree.get(handle);
-        println!("node: {:?}", e);
-        let e1 = ElementRef::wrap(e).unwrap();
-        println!("elementref: {:?}", e1);
-        //output_file.write_all(e1.html().as_bytes());
-
-        serialize(&mut output_file, &e1 , Default::default())?;
-    }
-*/
 
 	let opts = ParseOpts {
 		tree_builder: TreeBuilderOpts {
@@ -159,12 +135,12 @@ quick_main!(|| -> Result<()> {
 		&mut output_file,
 		&dom.document.borrow().children[0],
 		serialize_opts
-	).chain_err(|| format!("Unable to serialize fragment"))?;
+	).chain_err(|| "Unable to serialize fragment")?;
 
 	if ! args.keep_orig {
 		fs::remove_file(&original_path)?;	
 	}
-    
+
 	Ok(())
 });
 
